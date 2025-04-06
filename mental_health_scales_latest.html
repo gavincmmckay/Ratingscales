@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Auto-Scoring Mental Health Scales</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h2 { margin-top: 40px; }
+    .question { margin: 15px 0; }
+    .options label { margin-right: 20px; }
+    .score-box { margin-top: 20px; font-weight: bold; }
+    .scale-container { border: 1px solid #ccc; padding: 20px; margin-bottom: 30px; border-radius: 8px; }
+    .action-buttons { margin-top: 40px; }
+    .action-buttons button { margin-right: 10px; padding: 10px 20px; font-size: 16px; }
+    .error { color: red; font-weight: bold; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<h1>Auto-Scoring Scales</h1>
+
+<div id="error-message" class="error"></div>
+
+<div class="scale-container" id="PHQ9">
+  <h2>PHQ-9</h2>
+  <form oninput="calculateScore('PHQ9', 9)">
+    <div id="PHQ9_questions"></div>
+    <div class="score-box">Total Score: <span id="PHQ9_score">0</span></div>
+  </form>
+</div>
+
+<div class="scale-container" id="GAD7">
+  <h2>GAD-7</h2>
+  <form oninput="calculateScore('GAD7', 7)">
+    <div id="GAD7_questions"></div>
+    <div class="score-box">Total Score: <span id="GAD7_score">0</span></div>
+  </form>
+</div>
+
+<div class="scale-container" id="IESR">
+  <h2>IES-R</h2>
+  <form oninput="calculateScore('IESR', 22)">
+    <div id="IESR_questions"></div>
+    <div class="score-box">Total Score: <span id="IESR_score">0</span></div>
+  </form>
+</div>
+
+<div class="action-buttons">
+  <button onclick="window.print()">Print</button>
+  <button onclick="emailScores()">Email Results</button>
+</div>
+
+<script>
+const scales = {
+  PHQ9: {
+    questions: ["Little interest or pleasure in doing things", "Feeling down, depressed, or hopeless", "Trouble falling or staying asleep, or sleeping too much", "Feeling tired or having little energy", "Poor appetite or overeating", "Feeling bad about yourself or that you are a failure", "Trouble concentrating on things", "Moving/speaking slowly or being fidgety/restless", "Thoughts of being better off dead or self-harm"],
+    options: ["Not at all", "Several days", "More than half the days", "Nearly every day"]
+  },
+  GAD7: {
+    questions: ["Feeling nervous, anxious or on edge", "Not being able to stop or control worrying", "Worrying too much about different things", "Trouble relaxing", "Being so restless it is hard to sit still", "Becoming easily annoyed or irritable", "Feeling afraid as if something awful might happen"],
+    options: ["Not at all", "Several days", "More than half the days", "Nearly every day"]
+  },
+  IESR: {
+    questions: ["Any reminder brought back feelings about it", "I had trouble staying asleep", "Other things kept making me think about it", "I felt irritable and angry", "I avoided letting myself get upset about it", "I thought about it when I didn’t mean to", "I felt as if it hadn’t happened or wasn’t real", "I stayed away from reminders", "Pictures popped into my mind", "I was jumpy and easily startled", "I tried not to think about it", "I was aware I still had feelings but didn’t deal with them", "My feelings about it were kind of numb", "I found myself acting or feeling like I was back at that time", "I had trouble falling asleep", "I had waves of strong feelings about it", "I tried to remove it from my memory", "I had trouble concentrating", "Reminders caused physical reactions", "I had dreams about it", "I felt watchful or on-guard", "I tried not to talk about it"],
+    options: ["Not at all", "A little bit", "Moderately", "Quite a bit", "Extremely"]
+  }
+};
+
+for (let scale in scales) {
+  const container = document.getElementById(`${scale}_questions`);
+  scales[scale].questions.forEach((q, i) => {
+    const div = document.createElement('div');
+    div.className = 'question';
+    div.innerHTML = `<p>${i + 1}. ${q}</p>`;
+    div.innerHTML += scales[scale].options.map((opt, idx) => {
+      return `<label><input type="radio" name="${scale}_${i + 1}" value="${idx}"> ${opt}</label>`;
+    }).join(' ');
+    container.appendChild(div);
+  });
+}
+
+function calculateScore(scale, count) {
+  let total = 0;
+  for (let i = 1; i <= count; i++) {
+    const radios = document.getElementsByName(`${scale}_${i}`);
+    for (let r of radios) {
+      if (r.checked) {
+        total += parseInt(r.value);
+        break;
+      }
+    }
+  }
+  document.getElementById(`${scale}_score`).innerText = total;
+}
+
+function emailScores() {
+  let body = "Mental Health Scale Results:%0A%0A";
+  let errorMessage = "";
+
+  for (let scale in scales) {
+    body += `${scale} Total Score: ` + document.getElementById(`${scale}_score`).innerText + "%0A";
+    for (let i = 1; i <= scales[scale].questions.length; i++) {
+      const radios = document.getElementsByName(`${scale}_${i}`);
+      let selected = "(not answered)";
+      let answered = false;
+      for (let r of radios) {
+        if (r.checked) {
+          selected = r.nextSibling.textContent.trim();
+          answered = true;
+        }
+      }
+      if (!answered) {
+        errorMessage += `PLEASE CHECK AND ANSWER question ${i} on ${scale}
+`;
+      }
+      body += `${i}. ${scales[scale].questions[i-1]} — ${selected}%0A`;
+    }
+    body += "%0A";
+  }
+
+  const errorDisplay = document.getElementById("error-message");
+  if (errorMessage) {
+    errorDisplay.innerText = errorMessage;
+    window.scrollTo(0, 0);
+    return;
+  } else {
+    errorDisplay.innerText = "";
+  }
+
+  window.location.href = `mailto:gavin.mckay@expertpsychiatrist.co.uk?subject=Mental Health Scale Results&body=${body}`;
+}
+</script>
+
+</body>
+</html>
